@@ -1,0 +1,33 @@
+global:
+  domain: argocd.saar-lab.local
+  # topologySpreadConstraints:
+  #   - maxSkew: 1
+  #     topologyKey: "kubernetes.io/hostname"
+  #     whenUnsatisfiable: "DoNotSchedule"
+  #     labelSelector:
+  #       matchLabels:
+  #         app.kubernetes.io/name: argocd-server
+
+configs:
+  cm:
+    exec.enabled: true
+    statsusage.enabled: true
+
+controller:
+  replicaCount: 3
+
+redis-ha:
+  cluster:
+    enabled: true
+
+server:
+  autoscaling:
+    enabled: true
+  ingress:
+    enabled: true
+    annotations:
+      cert-manager.io/cluster-issuer: ca-issuer
+  ingressGrpc:
+    enabled: true
+    annotations:
+      cert-manager.io/cluster-issuer: ca-issuer
