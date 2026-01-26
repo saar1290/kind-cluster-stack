@@ -3,76 +3,127 @@
 # Generate self-signed certificate for Harbor
 # RSA key of size 4096 bits
 resource "tls_private_key" "rsa-4096-harbor" {
-  algorithm = "RSA"
-  rsa_bits  = 4096
+  algorithm  = "RSA"
+  rsa_bits   = 4096
+  depends_on = [null_resource.write_ca_files]
 }
 
 # Request self-signed certificate for Harbor
 resource "tls_cert_request" "csr_harbor" {
-  private_key_pem = file(tls_private_key.rsa-4096-harbor.private_key_pem)
-
+  private_key_pem = tls_private_key.rsa-4096-harbor.private_key_pem
   subject {
-    common_name  = var.harbor_hostname
-    organization = var.organization
-    country      = var.country
-    province     = var.province
-    locality     = var.locality 
+    common_name         = var.harbor_hostname
+    organization        = var.organization
+    organizational_unit = var.organizational_unit
+    country             = var.country
+    province            = var.province
+    locality            = var.locality
   }
-  
+
   dns_names = [
     var.domain,
-    var.harbor_hostname
+    var.harbor_hostname,
+    trimsuffix(var.harbor_hostname, ".${var.domain}")
   ]
 }
 
 # Signed certificate for Harbor using the CA
 resource "tls_locally_signed_cert" "harbor_cert" {
-  cert_request_pem   = file(tls_cert_request.csr_harbor.cert_request_pem)
-  ca_private_key_pem = file(tls_private_key.rsa-4096-harbor.private_key_pem)
-  ca_cert_pem        = file(tls_self_signed_cert.ca_cert.cert_pem)
+  cert_request_pem   = tls_cert_request.csr_harbor.cert_request_pem
+  ca_private_key_pem = tls_self_signed_cert.ca_cert.private_key_pem
+  ca_cert_pem        = tls_self_signed_cert.ca_cert.cert_pem
 
-  validity_period_hours = 12
+  validity_period_hours = 8760 # 1 year
 
   allowed_uses = [
     "key_encipherment",
-    "digital_signature",
-    "server_auth",
+    "data_encipherment",
+    "digital_signature"
   ]
   early_renewal_hours = 168
-  is_ca_certificate = false
+  is_ca_certificate   = false
+}
+
+# Write certificate and private key to file
+resource "null_resource" "write_harbor_certificates_files" {
+  provisioner "local-exec" {
+    quiet   = true
+    command = <<EOF
+      echo '${sensitive(trimspace(tls_private_key.rsa-4096-harbor.private_key_pem))}' > ssl/harbor.key
+      echo '${tls_locally_signed_cert.harbor_cert.cert_pem}' > ssl/harbor.crt
+    EOF
+  }
 }
 
 # Download Harbor installer
 resource "null_resource" "harbor_download" {
   provisioner "local-exec" {
-    command = <<EOF
-      curl -L https://github.com/goharbor/harbor/releases/download/${var.harbor_version}/harbor-online-installer-${var.harbor_version}.tgz -o harbor-online-installer-${var.harbor_version}.tgz && \
-      tar xvf harbor-online-installer-${var.harbor_version}.tgz
-    EOF
+    command = "./scripts/download-harbor.sh ${var.harbor_version}"
   }
-  depends_on = [ tls_locally_signed_cert.harbor_cert ]
-}
-
-resource "random_password" "admin_password" {
-  length  = 16
-  special = true
+  lifecycle {
+    replace_triggered_by = [random_password.admin_password]
+  }
+  depends_on = [tls_locally_signed_cert.harbor_cert]
 }
 
 # Install Harbor
 resource "null_resource" "harbor_install" {
   provisioner "local-exec" {
-    command = <<EOF
-      cd harbor && \
-      cp harbor.yml.tmpl harbor.yml && \
-      sed -i 's/hostname = .*/hostname = ${var.harbor_hostname}/' harbor.yml && \
-      sed -i 's/harbor_admin_password: .*/harbor_admin_password: ${random_password.admin_password.result}/' harbor.yml && \
-      sed -i 's/certificate: .*/certificate: /data/cert.crt' harbor.yml && \
-      sed -i 's/private_key: .*/private_key: /data/key.key' harbor.yml && \
-      mkdir -p /data && \
-      echo "${trimspace(tls_locally_signed_cert.harbor_cert.cert_pem)}" > /data/cert.crt && \
-      echo "${tls_private_key.rsa-4096-harbor.private_key_pem}" > /data/key.key && \
-      ./install.sh --with-notary --with-trivy --with-clair --with-chartmuseum
-    EOF
+    command = "./scripts/install-harbor.sh ${var.harbor_hostname} ${var.domain}"
+    environment = {
+      DOCKER_CONFIG = "$HOME/.docker"
+    }
   }
-  depends_on = [ null_resource.harbor_download ]
+  provisioner "local-exec" {
+    when    = destroy
+    command = "./scripts/uninstall-harbor.sh"
+  }
+  lifecycle {
+    replace_triggered_by = [random_password.admin_password]
+  }
+  depends_on = [null_resource.harbor_download]
+}
+
+# Generate random password for Harbor admin user
+resource "random_password" "admin_password" {
+  length  = 16
+  special = false
+  keepers = {
+    harbor_version = var.harbor_version
+  }
+}
+
+# Set Harbor admin password
+resource "null_resource" "set_harbor_admin_password" {
+  provisioner "local-exec" {
+    command = "scripts/set-harbor-admin-password.sh ${var.harbor_hostname} ${random_password.admin_password.result}"
+  }
+  lifecycle {
+    replace_triggered_by = [random_password.admin_password]
+  }
+  depends_on = [null_resource.harbor_install]
+}
+
+# Health check for Harbor
+resource "null_resource" "harbor_health_check" {
+  provisioner "local-exec" {
+    command = "./scripts/harbor-health-check.sh ${var.harbor_hostname} ${random_password.admin_password.result}"
+  }
+  depends_on = [null_resource.set_harbor_admin_password]
+}
+
+# Harbor Projects and Registries
+resource "harbor_project" "project" {
+  for_each    = { for repo in var.remote_repositories : repo.provider => repo }
+  name        = each.value.project_name
+  registry_id = harbor_registry.docker_proxy[each.key].id
+}
+
+resource "harbor_registry" "docker_proxy" {
+  for_each      = { for repo in var.remote_repositories : repo.provider => repo }
+  provider_name = each.value.provider
+  name          = "${each.value.provider}-proxy"
+  endpoint_url  = each.value.endpoint
+
+  depends_on = [null_resource.harbor_health_check]
 }

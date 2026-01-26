@@ -1,0 +1,16 @@
+# Ignore Terraform files
+.terraform.lock.hcl
+.terraform/
+*.tfstate
+*.tfstate.backup
+
+# Ignore Harbor data files
+harbor/*
+ssl/*
+
+
+# Ignore Cloud Provider Kind Repository files
+cloud-provider-kind/*
+
+# Ignore Kubeconfig files
+*-config

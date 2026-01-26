@@ -23,11 +23,3 @@ redis-ha:
 server:
   autoscaling:
     enabled: true
-  ingress:
-    enabled: true
-    annotations:
-      cert-manager.io/cluster-issuer: ca-issuer
-  ingressGrpc:
-    enabled: true
-    annotations:
-      cert-manager.io/cluster-issuer: ca-issuer

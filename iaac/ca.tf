@@ -1,30 +1,44 @@
 # Generate CA certificate and private key and public key
 
 # RSA key of size 4096 bits
-resource "tls_private_key" "rsa-4096-example" {
+resource "tls_private_key" "rsa-4096-ca" {
   algorithm = "RSA"
   rsa_bits  = 4096
 }
 
 # Write private key to file
 resource "tls_self_signed_cert" "ca_cert" {
-  private_key_pem = file(tls_private_key.rsa-4096-example.private_key_pem)
+  private_key_pem = tls_private_key.rsa-4096-ca.private_key_pem
 
   subject {
-    common_name  = var.ca_common_name
-    organization = var.organization
-    country      = var.country
-    province     = var.province
-    locality     = var.locality
+    common_name         = var.ca_common_name
+    organization        = var.organization
+    organizational_unit = var.organizational_unit
+    country             = var.country
+    province            = var.province
+    locality            = var.locality
   }
+  validity_period_hours = 87600 # 10 years
+  early_renewal_hours   = 168
+  is_ca_certificate     = true
+  allowed_uses          = []
+}
 
-  validity_period_hours = 12
-
-  allowed_uses = [
-    "key_encipherment",
-    "digital_signature",
-    "server_auth",
-  ]
-  early_renewal_hours = 168
-  is_ca_certificate = true
+resource "null_resource" "write_ca_files" {
+  provisioner "local-exec" {
+    quiet   = true
+    command = <<EOF
+      mkdir -p ssl
+      echo '${sensitive(trimspace(tls_private_key.rsa-4096-ca.private_key_pem))}' > ssl/ca.key
+      echo '${tls_self_signed_cert.ca_cert.cert_pem}' > ssl/ca.crt
+      mkdir -p ${local.docker_certs_dir}
+      echo '${tls_self_signed_cert.ca_cert.cert_pem}' > ${local.docker_certs_dir}/ca.crt
+    EOF
+  }
+  provisioner "local-exec" {
+    when    = destroy
+    command = <<EOF
+      rm -rf ssl/*
+    EOF
+  }
 }
