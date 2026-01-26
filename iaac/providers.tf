@@ -35,7 +35,7 @@ terraform {
 provider "harbor" {
   url      = "https://${var.harbor_hostname}"
   username = "admin"
-  password = random_password.admin_password.result
+  password = "${random_password.admin_password.result}"
   insecure = true
 }
 
@@ -45,7 +45,7 @@ provider "docker" {
   registry_auth {
     address  = var.harbor_hostname
     username = "admin"
-    password = random_password.admin_password.result
+    password = "${random_password.admin_password.result}"
   }
 }
 

@@ -69,7 +69,7 @@ resource "null_resource" "harbor_download" {
 # Install Harbor
 resource "null_resource" "harbor_install" {
   provisioner "local-exec" {
-    command = "./scripts/install-harbor.sh ${var.harbor_hostname} ${var.domain}"
+    command = "./scripts/install-harbor.sh ${var.harbor_hostname} ${local.docker_certs_dir}"
     environment = {
       DOCKER_CONFIG = "$HOME/.docker"
     }
@@ -84,9 +84,22 @@ resource "null_resource" "harbor_install" {
   depends_on = [null_resource.harbor_download]
 }
 
+# Harbor Cleanup data stores on uninstall
+resource "null_resource" "harbor_cleanup_db" {
+  triggers = {
+    harbor_data_location = local.harbor_data_location
+    sudo                 = var.sudo
+  }
+
+  provisioner "local-exec" {
+    when    = destroy
+    command = "./scripts/harbor-cleanup-db.sh ${self.triggers.harbor_data_location} ${self.triggers.sudo}"
+  }
+}
+
 # Generate random password for Harbor admin user
 resource "random_password" "admin_password" {
-  length  = 16
+  length  = 10
   special = false
   keepers = {
     harbor_version = var.harbor_version

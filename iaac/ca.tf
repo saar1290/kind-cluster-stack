@@ -37,8 +37,6 @@ resource "null_resource" "write_ca_files" {
   }
   provisioner "local-exec" {
     when    = destroy
-    command = <<EOF
-      rm -rf ssl/*
-    EOF
+    command = "scripts/clean-certificates.sh"
   }
 }

@@ -1,5 +1,6 @@
 module "kind-cluster-stack" {
   source               = "./iaac"
+  sudo                 = var.sudo
   domain               = "saar-lab.local"
   ca_common_name       = "kind-cluster-ca"
   organization         = "Saar Lab"

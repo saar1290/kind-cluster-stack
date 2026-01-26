@@ -44,4 +44,5 @@ resource "docker_container" "cloud_provider_kind_start" {
     type   = "bind"
   }
   network_mode = "kind"
+  depends_on = [ docker_registry_image.pushed_image ]
 }

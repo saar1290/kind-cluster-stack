@@ -1,6 +1,11 @@
 locals {
-  docker_certs_dir = pathexpand("~/.docker/certs.d/${var.harbor_hostname}")
-  docker_ca        = fileexists((pathexpand("~/.docker/certs.d/${var.harbor_hostname}/ca.pem"))) == true ? file((pathexpand("~/.docker/certs.d/${var.harbor_hostname}/ca.pem"))) : ""
+  docker_certs_dir = pathexpand("~/.docker/certs.d/${var.harbor_hostname}:443")
+  harbor_data_location = pathexpand("~/harbor")
+}
+
+variable "sudo" {
+  description = "Sudo command prefix for scripts that require elevated permissions"
+  type        = string
 }
 
 variable "ca_common_name" {

@@ -9,10 +9,11 @@ HARBOR_CERT="ssl/harbor.crt"
 HARBOR_KEY="ssl/harbor.key"
 HARBOR_INSTALLATION_DIR="harbor"
 HARBOR_CERT_DIR="$HOME/harbor/data/certs"
-DOCKER_CERTS_DIR="$HOME/.docker/certs.d/$HARBOR_HOSTNAME"
+HARBOR_DATA="$HOME/harbor"
 
 # Inputs arguments
 HARBOR_HOSTNAME=$1
+DOCKER_CERTS_DIR=$2
 
 # # Run Harbor installation script
 cp $HARBOR_TMPL $HARBOR_CONFIG
@@ -20,6 +21,7 @@ sed -i "s|hostname: .*|hostname: ${HARBOR_HOSTNAME}|g" $HARBOR_CONFIG
 sed -i "s|certificate: .*|certificate: ${HARBOR_CERT_DIR}/${HARBOR_HOSTNAME}.crt|g" $HARBOR_CONFIG
 sed -i "s|private_key: .*|private_key: ${HARBOR_CERT_DIR}/${HARBOR_HOSTNAME}.key|g" $HARBOR_CONFIG
 sed -i "s|# external_url: .*|external_url: https://${HARBOR_HOSTNAME}|g" $HARBOR_CONFIG
+sed -i "s|data_volume: .*|data_volume: ${HARBOR_DATA}|g" $HARBOR_CONFIG
 mkdir -p $HARBOR_CERT_DIR
 cp $HARBOR_CERT $HARBOR_CERT_DIR/${HARBOR_HOSTNAME}.crt
 cp $HARBOR_KEY $HARBOR_CERT_DIR/${HARBOR_HOSTNAME}.key
