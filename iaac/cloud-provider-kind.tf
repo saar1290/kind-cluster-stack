@@ -21,7 +21,7 @@ resource "null_resource" "cloud_provider_kind_clone" {
 
 # Build a Docker image from a Dockerfile
 resource "docker_image" "cloud_provider_kind_build" {
-  name = "${var.harbor_hostname}/${var.harbor_project}/cloud-provider-kind:latest"
+  name = "${var.harbor_hostname}/eco-system/cloud-provider-kind:latest"
   build {
     context = "cloud-provider-kind/."
   }
@@ -30,9 +30,7 @@ resource "docker_image" "cloud_provider_kind_build" {
 
 # Push the image to a registry
 resource "docker_registry_image" "pushed_image" {
-  name                 = docker_image.cloud_provider_kind_build.name
-  insecure_skip_verify = true
-  
+  name       = docker_image.cloud_provider_kind_build.name
   depends_on = [null_resource.write_ca_files]
 }
 
@@ -46,5 +44,5 @@ resource "docker_container" "cloud_provider_kind_start" {
     type   = "bind"
   }
   network_mode = "kind"
-  depends_on = [ docker_registry_image.pushed_image ]
+  depends_on   = [docker_registry_image.pushed_image]
 }

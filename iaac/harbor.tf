@@ -128,10 +128,18 @@ resource "null_resource" "harbor_health_check" {
 
 # Harbor Projects and Registries
 resource "harbor_project" "project" {
+  for_each   = { for project in var.harbor_projects : project => project }
+  name       = each.value
+  force_destroy = true
+  depends_on = [null_resource.set_harbor_admin_password]
+}
+
+
+resource "harbor_project" "proxy_project" {
   for_each    = { for repo in var.remote_repositories : repo.provider => repo }
   name        = each.value.project_name
   registry_id = tonumber(element(split("/", harbor_registry.docker_proxy[each.key].id), length(split("/", harbor_registry.docker_proxy[each.key].id)) - 1))
-  
+
   depends_on = [harbor_registry.docker_proxy]
 }
 

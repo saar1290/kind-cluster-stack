@@ -10,7 +10,6 @@ module "kind-cluster-stack" {
   locality             = "Israel"
   harbor_version       = "v2.14.2"
   harbor_hostname      = "harbor.saar-lab.local"
-  harbor_project       = "eco-system"
   cluster_name         = "saar-lab"
   node_image           = "kindest/node:v1.35.0"
   cert_manager_version = "v1.19.2"
@@ -18,6 +17,7 @@ module "kind-cluster-stack" {
   vault_hostname       = "vault.saar-lab.local"
   argocd_version       = "9.3.5"
   argocd_hostname      = "argocd.saar-lab.local"
+  harbor_projects      = ["eco-system"]
   remote_repositories = [
     {
       provider     = "docker-hub"

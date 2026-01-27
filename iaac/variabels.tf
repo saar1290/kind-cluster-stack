@@ -1,5 +1,5 @@
 locals {
-  docker_certs_dir = pathexpand("~/.docker/certs.d/${var.harbor_hostname}:443")
+  docker_certs_dir     = pathexpand("~/.docker/certs.d/${var.harbor_hostname}:443")
   harbor_data_location = pathexpand("~/harbor")
 }
 
@@ -68,9 +68,9 @@ variable "harbor_hostname" {
   type        = string
 }
 
-variable "harbor_project" {
-  description = "The Harbor project name"
-  type        = string
+variable "harbor_projects" {
+  description = "The Harbor projects name"
+  type        = list(string)
 }
 
 variable "cluster_name" {

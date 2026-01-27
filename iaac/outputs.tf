@@ -11,6 +11,5 @@ output "argocd_url" {
 }
 
 output "harbor_admin_password" {
-  value     = random_password.admin_password.result
-  sensitive = true
+  value = nonsensitive(random_password.admin_password.result)
 }

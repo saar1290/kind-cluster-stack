@@ -32,9 +32,8 @@ resource "null_resource" "write_ca_files" {
       echo '${sensitive(trimspace(tls_private_key.rsa-4096-ca.private_key_pem))}' > ssl/ca.key
       echo '${tls_self_signed_cert.ca_cert.cert_pem}' > ssl/ca.crt
       mkdir -p ${local.docker_certs_dir}
-      echo '${tls_self_signed_cert.ca_cert.cert_pem}' > ${local.docker_certs_dir}/ca.crt
     EOF
-  } 
+  }
   provisioner "local-exec" {
     when    = destroy
     command = "scripts/clean-certificates.sh"
