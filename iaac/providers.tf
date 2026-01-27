@@ -36,16 +36,15 @@ provider "harbor" {
   url      = "https://${var.harbor_hostname}"
   username = "admin"
   password = "${random_password.admin_password.result}"
-  insecure = true
 }
 
 # Configure the Docker Provider
 provider "docker" {
   host = "unix:///var/run/docker.sock"
   registry_auth {
-    address  = var.harbor_hostname
-    username = "admin"
-    password = "${random_password.admin_password.result}"
+    address     = var.harbor_hostname
+    username    = "admin"
+    password    = "${random_password.admin_password.result}"
   }
 }
 

@@ -95,6 +95,7 @@ resource "null_resource" "harbor_cleanup_db" {
     when    = destroy
     command = "./scripts/harbor-cleanup-db.sh ${self.triggers.harbor_data_location} ${self.triggers.sudo}"
   }
+  depends_on = [null_resource.harbor_health_check]
 }
 
 # Generate random password for Harbor admin user
@@ -114,7 +115,7 @@ resource "null_resource" "set_harbor_admin_password" {
   lifecycle {
     replace_triggered_by = [random_password.admin_password]
   }
-  depends_on = [null_resource.harbor_install]
+  depends_on = [null_resource.harbor_health_check]
 }
 
 # Health check for Harbor
@@ -122,14 +123,16 @@ resource "null_resource" "harbor_health_check" {
   provisioner "local-exec" {
     command = "./scripts/harbor-health-check.sh ${var.harbor_hostname} ${random_password.admin_password.result}"
   }
-  depends_on = [null_resource.set_harbor_admin_password]
+  depends_on = [null_resource.harbor_install]
 }
 
 # Harbor Projects and Registries
 resource "harbor_project" "project" {
   for_each    = { for repo in var.remote_repositories : repo.provider => repo }
   name        = each.value.project_name
-  registry_id = harbor_registry.docker_proxy[each.key].id
+  registry_id = tonumber(element(split("/", harbor_registry.docker_proxy[each.key].id), length(split("/", harbor_registry.docker_proxy[each.key].id)) - 1))
+  
+  depends_on = [harbor_registry.docker_proxy]
 }
 
 resource "harbor_registry" "docker_proxy" {
@@ -138,5 +141,5 @@ resource "harbor_registry" "docker_proxy" {
   name          = "${each.value.provider}-proxy"
   endpoint_url  = each.value.endpoint
 
-  depends_on = [null_resource.harbor_health_check]
+  depends_on = [null_resource.set_harbor_admin_password]
 }

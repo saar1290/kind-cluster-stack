@@ -32,6 +32,8 @@ resource "docker_image" "cloud_provider_kind_build" {
 resource "docker_registry_image" "pushed_image" {
   name                 = docker_image.cloud_provider_kind_build.name
   insecure_skip_verify = true
+  
+  depends_on = [null_resource.write_ca_files]
 }
 
 # Start a container

@@ -1,8 +1,6 @@
 # Ignore Terraform files
 .terraform.lock.hcl
-.terraform/
-*.tfstate
-*.tfstate.backup
+.terraform*
 
 # Ignore Harbor data files
 harbor/*

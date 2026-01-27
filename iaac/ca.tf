@@ -34,9 +34,16 @@ resource "null_resource" "write_ca_files" {
       mkdir -p ${local.docker_certs_dir}
       echo '${tls_self_signed_cert.ca_cert.cert_pem}' > ${local.docker_certs_dir}/ca.crt
     EOF
-  }
+  } 
   provisioner "local-exec" {
     when    = destroy
     command = "scripts/clean-certificates.sh"
   }
+}
+
+resource "null_resource" "install_ca_certificates" {
+  provisioner "local-exec" {
+    command = "scripts/install-ca-certificates.sh ${var.sudo}"
+  }
+  depends_on = [null_resource.write_ca_files]
 }

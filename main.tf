@@ -22,12 +22,12 @@ module "kind-cluster-stack" {
     {
       provider     = "docker-hub"
       endpoint     = "https://hub.docker.com"
-      project_name = "eco-system"
+      project_name = "docker-proxy"
     },
     {
-      provider     = "quay-io"
+      provider     = "docker-registry"
       endpoint     = "https://quay.io"
-      project_name = "eco-system"
+      project_name = "quay-proxy"
     }
   ]
 }
