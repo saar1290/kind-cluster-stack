@@ -1,10 +1,11 @@
 locals {
+  ssl_certs_dir        = pathexpand("~/kind-stack/certs")
   docker_certs_dir     = pathexpand("~/.docker/certs.d/${var.harbor_hostname}:443")
   harbor_data_location = pathexpand("~/harbor")
 }
 
 variable "sudo" {
-  description = "Sudo command prefix for scripts that require elevated permissions"
+  description = "Sudo password for executing commands with elevated privileges"
   type        = string
 }
 

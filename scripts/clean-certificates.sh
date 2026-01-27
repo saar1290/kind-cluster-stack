@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Inputs arguments
-DOCKER_CERTS_DIR=$1
+KIND_STAKE_CERTS_DIR=$1
+DOCKER_CERTS_DIR=$2
 
-rm -rf ssl/*
+rm -rf $KIND_STAKE_CERTS_DIR
 rm -rf $DOCKER_CERTS_DIR

@@ -49,8 +49,8 @@ resource "null_resource" "write_harbor_certificates_files" {
   provisioner "local-exec" {
     quiet   = true
     command = <<EOF
-      echo '${sensitive(trimspace(tls_private_key.rsa-4096-harbor.private_key_pem))}' > ssl/harbor.key
-      echo '${tls_locally_signed_cert.harbor_cert.cert_pem}' > ssl/harbor.crt
+      echo '${sensitive(trimspace(tls_private_key.rsa-4096-harbor.private_key_pem))}' > ${local.ssl_certs_dir}/harbor.key
+      echo '${tls_locally_signed_cert.harbor_cert.cert_pem}' > ${local.ssl_certs_dir}/harbor.crt
     EOF
   }
 }
@@ -69,7 +69,7 @@ resource "null_resource" "harbor_download" {
 # Install Harbor
 resource "null_resource" "harbor_install" {
   provisioner "local-exec" {
-    command = "./scripts/install-harbor.sh ${var.harbor_hostname} ${local.docker_certs_dir}"
+    command = "./scripts/install-harbor.sh ${var.harbor_hostname} ${local.docker_certs_dir} ${var.sudo}"
     environment = {
       DOCKER_CONFIG = "$HOME/.docker"
     }

@@ -14,6 +14,7 @@ HARBOR_DATA="$HOME/harbor"
 # Inputs arguments
 HARBOR_HOSTNAME=$1
 DOCKER_CERTS_DIR=$2
+SUDO=$3
 
 # # Run Harbor installation script
 cp $HARBOR_TMPL $HARBOR_CONFIG
@@ -27,5 +28,8 @@ cp $HARBOR_CERT $HARBOR_CERT_DIR/${HARBOR_HOSTNAME}.crt
 cp $HARBOR_KEY $HARBOR_CERT_DIR/${HARBOR_HOSTNAME}.key
 openssl x509 -inform PEM -in $HARBOR_CERT -out $DOCKER_CERTS_DIR/${HARBOR_HOSTNAME}.cert
 cp $HARBOR_KEY $DOCKER_CERTS_DIR/${HARBOR_HOSTNAME}.key
+echo "Restarting Docker to apply changes 🔄"
+echo $SUDO | sudo systemctl restart docker
 cd $HARBOR_INSTALLATION_DIR && ./prepare
 cd .. && chmod +x $HARBOR_INSTALLATION_DIR/install.sh && $HARBOR_INSTALLATION_DIR/install.sh --with-trivy
+echo "Harbor installation completed successfully ✅"

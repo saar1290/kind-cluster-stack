@@ -28,15 +28,15 @@ resource "null_resource" "write_ca_files" {
   provisioner "local-exec" {
     quiet   = true
     command = <<EOF
-      mkdir -p ssl
-      echo '${sensitive(trimspace(tls_private_key.rsa-4096-ca.private_key_pem))}' > ssl/ca.key
-      echo '${tls_self_signed_cert.ca_cert.cert_pem}' > ssl/ca.crt
+      mkdir -p ${local.ssl_certs_dir}
       mkdir -p ${local.docker_certs_dir}
+      echo '${sensitive(trimspace(tls_private_key.rsa-4096-ca.private_key_pem))}' > ${local.ssl_certs_dir}/ca.key
+      echo '${tls_self_signed_cert.ca_cert.cert_pem}' > ${local.ssl_certs_dir}/ca.crt
     EOF
   }
   provisioner "local-exec" {
     when    = destroy
-    command = "scripts/clean-certificates.sh"
+    command = "scripts/clean-certificates.sh ${local.ssl_certs_dir} ${local.docker_certs_dir}"
   }
 }
 
