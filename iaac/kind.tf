@@ -41,8 +41,4 @@ resource "kind_cluster" "default" {
       rm -rf ${self.name}-config
     EOF
   }
-  depends_on = [
-    docker_registry_image.pushed_image,
-    docker_container.cloud_provider_kind_start
-  ]
 }

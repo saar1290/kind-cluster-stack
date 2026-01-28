@@ -13,7 +13,7 @@ resource "null_resource" "cloud_provider_kind_clone" {
     when    = destroy
     command = "rm -rf ${self.triggers.cloud_provider_kind_dir}"
   }
-  depends_on = [null_resource.harbor_health_check]
+  depends_on = [kind_cluster.default]
 }
 
 # Build a Docker image from a Dockerfile
@@ -28,7 +28,6 @@ resource "docker_image" "cloud_provider_kind_build" {
 # Push the image to a registry
 resource "docker_registry_image" "pushed_image" {
   name       = docker_image.cloud_provider_kind_build.name
-  depends_on = [null_resource.write_ca_files]
 }
 
 # Start a container
@@ -40,6 +39,5 @@ resource "docker_container" "cloud_provider_kind_start" {
     target = "/var/run/docker.sock"
     type   = "bind"
   }
-  network_mode = "bridge"
-  depends_on   = [docker_registry_image.pushed_image]
+  network_mode = "kind"
 }
