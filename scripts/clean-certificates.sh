@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+ 
 # Inputs arguments
 KIND_STAKE_CERTS_DIR=$1
 DOCKER_CERTS_DIR=$2

@@ -1,7 +1,9 @@
 locals {
   ssl_certs_dir        = pathexpand("~/kind-stack/certs")
   docker_certs_dir     = pathexpand("~/.docker/certs.d/${var.harbor_hostname}:443")
-  harbor_data_location = pathexpand("~/harbor")
+  harbor_data_location = pathexpand("~/harbor-data")
+  harbor_installation_dir = pathexpand("~/harbor")
+  cloud_provider_kind_dir = pathexpand("~/cloud-provider-kind")
 }
 
 variable "sudo" {
@@ -77,6 +79,29 @@ variable "harbor_projects" {
 variable "cluster_name" {
   description = "The name of the kind cluster"
   type        = string
+}
+
+variable "nodes" {
+  description = "List of nodes for the kind cluster"
+  type = list(object({
+    role = string
+    image = optional(string)
+    kubeadm_config_patches = optional(list(string))
+    labels = optional(map(string))
+    extra_mounts = list(object({
+      host_path      = optional(string)
+      container_path = optional(string)
+      read_only      = optional(bool)
+      propagation    = optional(string)
+      selinux_relabel = optional(bool)
+    }))
+    extra_port_mappings = list(object({
+      container_port = optional(number)
+      host_port      = optional(number)
+      protocol       = optional(string)
+      listen_address = optional(string)
+    }))
+  }))
 }
 
 variable "node_image" {

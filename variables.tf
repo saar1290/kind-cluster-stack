@@ -1,5 +1,5 @@
 variable "sudo" {
-  description = "Sudo command prefix for scripts that require elevated permissions"
+  description = "Sudo password for executing commands with elevated privileges"
   type        = string
   sensitive   = true
 }

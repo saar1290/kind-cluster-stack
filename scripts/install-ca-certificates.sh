@@ -1,8 +1,8 @@
 #! /bin/bash
 
 # Input arguments
-SUDO=$1
-KIND_SSL_CERTS_DIR=$2
+KIND_SSL_CERTS_DIR=$1
+SUDO=$2
 
 # Copy CA certificate to system trust store
 if [ ! -f /etc/ssl/certs/ca.pem ]; then

@@ -62,11 +62,16 @@ resource "tls_locally_signed_cert" "cert_manager_ca_cert" {
 
 # Write certificate and private key to file
 resource "null_resource" "write_cert-manager_certificates_files" {
+  triggers = {
+    cert_manager_ca_cert = tls_locally_signed_cert.cert_manager_ca_cert.cert_pem
+    cert_manager_private_key          = tls_private_key.rsa-4096-cert-manager.private_key_pem
+    ssl_certs_dir       = local.ssl_certs_dir
+  }
   provisioner "local-exec" {
     quiet   = true
     command = <<EOF
-      echo '${sensitive(trimspace(tls_private_key.rsa-4096-cert-manager.private_key_pem))}' > ${local.ssl_certs_dir}/cert-manager.key
-      echo '${tls_locally_signed_cert.cert_manager_ca_cert.ca_cert_pem}' > ${local.ssl_certs_dir}/cert-manager.crt
+      echo '${sensitive(trimspace(self.triggers.cert_manager_private_key))}' > ${self.triggers.ssl_certs_dir}/cert-manager.key
+      echo '${self.triggers.cert_manager_ca_cert}' > ${self.triggers.ssl_certs_dir}/cert-manager.crt
     EOF
   }
 }

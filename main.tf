@@ -12,6 +12,18 @@ module "kind-cluster-stack" {
   harbor_hostname      = "harbor.saar-lab.local"
   cluster_name         = "saar-lab"
   node_image           = "kindest/node:v1.35.0"
+  nodes                = [
+    {
+      role = "control-plane"
+      extra_mounts = []
+      extra_port_mappings = []
+    },
+    {
+      role = "worker"
+      extra_mounts = []
+      extra_port_mappings = []
+    }
+  ] 
   cert_manager_version = "v1.19.2"
   vault_version        = "0.32.0"
   vault_hostname       = "vault.saar-lab.local"

@@ -2,19 +2,16 @@
 
 # Cloning the cloud-provider-kind repository
 resource "null_resource" "cloud_provider_kind_clone" {
+  triggers = {
+    cloud_provider_kind_dir = local.cloud_provider_kind_dir
+  }
   provisioner "local-exec" {
     quiet   = true
-    command = <<EOF
-      mkdir -p cloud-provider-kind
-      cd cloud-provider-kind
-      git clone https://github.com/kubernetes-sigs/cloud-provider-kind.git .
-    EOF
+    command = "scripts/download-cpk.sh ${self.triggers.cloud_provider_kind_dir}"
   }
   provisioner "local-exec" {
     when    = destroy
-    command = <<EOF
-      rm -rf cloud-provider-kind
-    EOF
+    command = "rm -rf ${self.triggers.cloud_provider_kind_dir}"
   }
   depends_on = [null_resource.harbor_health_check]
 }
@@ -23,7 +20,7 @@ resource "null_resource" "cloud_provider_kind_clone" {
 resource "docker_image" "cloud_provider_kind_build" {
   name = "${var.harbor_hostname}/eco-system/cloud-provider-kind:latest"
   build {
-    context = "cloud-provider-kind/."
+    context = "${local.cloud_provider_kind_dir}/."
   }
   depends_on = [null_resource.cloud_provider_kind_clone]
 }
@@ -43,6 +40,6 @@ resource "docker_container" "cloud_provider_kind_start" {
     target = "/var/run/docker.sock"
     type   = "bind"
   }
-  network_mode = "kind"
+  network_mode = "bridge"
   depends_on   = [docker_registry_image.pushed_image]
 }

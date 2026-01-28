@@ -46,19 +46,28 @@ resource "tls_locally_signed_cert" "harbor_cert" {
 
 # Write certificate and private key to file
 resource "null_resource" "write_harbor_certificates_files" {
+  triggers = {
+    harbor_cert    = tls_locally_signed_cert.harbor_cert.cert_pem
+    harbor_key     = sensitive(trimspace(tls_private_key.rsa-4096-harbor.private_key_pem))
+    ssl_certs_dir  = local.ssl_certs_dir
+  }
   provisioner "local-exec" {
     quiet   = true
     command = <<EOF
-      echo '${sensitive(trimspace(tls_private_key.rsa-4096-harbor.private_key_pem))}' > ${local.ssl_certs_dir}/harbor.key
-      echo '${tls_locally_signed_cert.harbor_cert.cert_pem}' > ${local.ssl_certs_dir}/harbor.crt
+      echo '${self.triggers.harbor_key}' > ${self.triggers.ssl_certs_dir}/harbor.key
+      echo '${self.triggers.harbor_cert}' > ${self.triggers.ssl_certs_dir}/harbor.crt
     EOF
   }
 }
 
 # Download Harbor installer
 resource "null_resource" "harbor_download" {
+  triggers = {
+    harbor_version = var.harbor_version
+    harbor_installation_dir = local.harbor_installation_dir
+  }
   provisioner "local-exec" {
-    command = "./scripts/download-harbor.sh ${var.harbor_version}"
+    command = "scripts/download-harbor.sh ${self.triggers.harbor_version} ${self.triggers.harbor_installation_dir}"
   }
   lifecycle {
     replace_triggered_by = [random_password.admin_password]
@@ -68,34 +77,28 @@ resource "null_resource" "harbor_download" {
 
 # Install Harbor
 resource "null_resource" "harbor_install" {
+  triggers = {
+    harbor_hostname        = var.harbor_hostname
+    docker_certs_dir       = local.docker_certs_dir
+    harbor_data_location   = local.harbor_data_location
+    harbor_installation_dir = local.harbor_installation_dir
+    sudo                   = var.sudo
+  }
   provisioner "local-exec" {
-    command = "./scripts/install-harbor.sh ${var.harbor_hostname} ${local.docker_certs_dir} ${var.sudo}"
-    environment = {
-      DOCKER_CONFIG = "$HOME/.docker"
-    }
+    command = "scripts/install-harbor.sh ${self.triggers.harbor_hostname} ${self.triggers.harbor_installation_dir} ${self.triggers.harbor_data_location} ${self.triggers.docker_certs_dir} ${local.ssl_certs_dir} ${self.triggers.sudo}"
   }
   provisioner "local-exec" {
     when    = destroy
-    command = "./scripts/uninstall-harbor.sh"
+    command = "scripts/uninstall-harbor.sh ${self.triggers.harbor_installation_dir} ${self.triggers.sudo}"
+  }
+  provisioner "local-exec" {
+    when    = destroy
+    command = "scripts/harbor-cleanup-db.sh ${self.triggers.harbor_data_location} ${self.triggers.sudo}"
   }
   lifecycle {
     replace_triggered_by = [random_password.admin_password]
   }
   depends_on = [null_resource.harbor_download]
-}
-
-# Harbor Cleanup data stores on uninstall
-resource "null_resource" "harbor_cleanup_db" {
-  triggers = {
-    harbor_data_location = local.harbor_data_location
-    sudo                 = var.sudo
-  }
-
-  provisioner "local-exec" {
-    when    = destroy
-    command = "./scripts/harbor-cleanup-db.sh ${self.triggers.harbor_data_location} ${self.triggers.sudo}"
-  }
-  depends_on = [null_resource.harbor_health_check]
 }
 
 # Generate random password for Harbor admin user
@@ -109,21 +112,29 @@ resource "random_password" "admin_password" {
 
 # Set Harbor admin password
 resource "null_resource" "set_harbor_admin_password" {
+  triggers = {
+    harbor_hostname = var.harbor_hostname
+    admin_password  = random_password.admin_password.result
+  }
   provisioner "local-exec" {
-    command = "scripts/set-harbor-admin-password.sh ${var.harbor_hostname} ${random_password.admin_password.result}"
+    command = "scripts/set-harbor-admin-password.sh ${self.triggers.harbor_hostname} ${self.triggers.admin_password}"
   }
   lifecycle {
     replace_triggered_by = [random_password.admin_password]
   }
-  depends_on = [null_resource.harbor_health_check]
+  depends_on = [null_resource.harbor_install]
 }
 
 # Health check for Harbor
 resource "null_resource" "harbor_health_check" {
-  provisioner "local-exec" {
-    command = "./scripts/harbor-health-check.sh ${var.harbor_hostname} ${random_password.admin_password.result}"
+  triggers = {
+    harbor_hostname = var.harbor_hostname
+    admin_password  = random_password.admin_password.result
   }
-  depends_on = [null_resource.harbor_install]
+  provisioner "local-exec" {
+    command = "scripts/harbor-health-check.sh ${self.triggers.harbor_hostname} ${self.triggers.admin_password}"
+  }
+  depends_on = [null_resource.set_harbor_admin_password]
 }
 
 # Harbor Projects and Registries
