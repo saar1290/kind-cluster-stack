@@ -88,6 +88,9 @@ resource "null_resource" "harbor_install" {
     command = "scripts/install-harbor.sh ${self.triggers.harbor_hostname} ${self.triggers.harbor_installation_dir} ${self.triggers.harbor_data_location} ${self.triggers.docker_certs_dir} ${local.ssl_certs_dir} ${self.triggers.sudo}"
   }
   provisioner "local-exec" {
+    command = "scripts/install-harbor-service.sh ${self.triggers.harbor_installation_dir} ${self.triggers.sudo}"
+  }
+  provisioner "local-exec" {
     when    = destroy
     command = "scripts/uninstall-harbor.sh ${self.triggers.harbor_installation_dir} ${self.triggers.sudo}"
   }
@@ -114,27 +117,28 @@ resource "random_password" "admin_password" {
 resource "null_resource" "set_harbor_admin_password" {
   triggers = {
     harbor_hostname = var.harbor_hostname
-    admin_password  = random_password.admin_password.result
+    new_admin_password  = random_password.admin_password.result
+    admin_password  = local.default_admin_password
   }
   provisioner "local-exec" {
-    command = "scripts/set-harbor-admin-password.sh ${self.triggers.harbor_hostname} ${self.triggers.admin_password}"
+    command = "scripts/set-harbor-admin-password.sh ${self.triggers.harbor_hostname} ${self.triggers.new_admin_password} ${self.triggers.admin_password}"
   }
   lifecycle {
     replace_triggered_by = [random_password.admin_password]
   }
-  depends_on = [null_resource.harbor_install]
+  depends_on = [null_resource.harbor_health_check]
 }
 
 # Health check for Harbor
 resource "null_resource" "harbor_health_check" {
   triggers = {
     harbor_hostname = var.harbor_hostname
-    admin_password  = random_password.admin_password.result
+    admin_password  = local.default_admin_password
   }
   provisioner "local-exec" {
     command = "scripts/harbor-health-check.sh ${self.triggers.harbor_hostname} ${self.triggers.admin_password}"
   }
-  depends_on = [null_resource.set_harbor_admin_password]
+  depends_on = [null_resource.harbor_install]
 }
 
 # Harbor Projects and Registries

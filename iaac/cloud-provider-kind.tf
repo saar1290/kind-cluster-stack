@@ -39,5 +39,10 @@ resource "docker_container" "cloud_provider_kind_start" {
     target = "/var/run/docker.sock"
     type   = "bind"
   }
-  network_mode = "kind"
+  mounts {
+    source = abspath("${path.root}/${kind_cluster.default.name}-config")
+    target = "/root/.kube/config"
+    type   = "bind"
+  }
+  network_mode = "host"
 }

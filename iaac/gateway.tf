@@ -9,6 +9,29 @@ resource "null_resource" "gateway_api_crds" {
   ]
 }
 
+# Create Certificate for Gateway TLS
+resource "kubectl_manifest" "gateway_certificate" {
+  yaml_body = <<YAML
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: kind-cluster-tls
+  namespace: kube-system
+spec:
+  secretName: kind-cluster-tls
+  issuerRef:
+    name: ca-issuer
+    kind: ClusterIssuer
+  dnsNames:
+  - "*.${var.domain}"
+  - "${var.domain}"
+YAML
+  depends_on = [
+    kubectl_manifest.cert_manager_cluster_issuer,
+    null_resource.gateway_api_crds
+  ]
+}
+
 # Provisioning Gateway API for kind cluster
 resource "kubectl_manifest" "gateway_api_kind_cluster" {
   yaml_body = <<YAML
@@ -17,6 +40,8 @@ kind: Gateway
 metadata:
   name: global-api-gateway
   namespace: kube-system
+  annotations:
+    cert-manager.io/cluster-issuer: ca-issuer
 spec:
   gatewayClassName: cloud-provider-kind
   listeners:
@@ -26,15 +51,17 @@ spec:
     tls:
       mode: Terminate
       certificateRefs:
-      - name: cert-manager/ca-secret
+      - name: kind-cluster-tls
+        kind: Secret
     allowedRoutes:
       namespaces:
-        from: Same
+        from: All # Allows routes from all namespaces
 YAML
   depends_on = [
     null_resource.gateway_api_crds,
     kind_cluster.default,
     docker_container.cloud_provider_kind_start,
-    helm_release.cert_manager
+    helm_release.cert_manager,
+    kubectl_manifest.gateway_certificate
   ]
 }

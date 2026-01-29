@@ -4,6 +4,7 @@ locals {
   harbor_data_location = pathexpand("~/harbor-data")
   harbor_installation_dir = pathexpand("~/harbor")
   cloud_provider_kind_dir = pathexpand("~/cloud-provider-kind")
+  default_admin_password = "Harbor12345"
 }
 
 variable "sudo" {
@@ -127,4 +128,27 @@ variable "remote_repositories" {
     project_name = string
   }))
   default = []
+}
+
+variable "kind_control_plane_int_port" {
+  description = "The internal port for the kind control plane"
+  type        = number
+  default     = 443
+}
+
+variable "kind_control_plane_ext_port" {
+  description = "The external port for the kind control plane"
+  type        = number
+  default     = 443
+}
+
+variable "kind_control_plane_protocol" {
+  description = "The protocol for the kind control plane"
+  type        = string
+  default     = "tcp"
+}
+
+variable "kind_control_plane_ip" {
+  description = "The IP address for the kind control plane"
+  type        = string
 }

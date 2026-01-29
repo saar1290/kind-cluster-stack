@@ -2,7 +2,7 @@
 
 HARBOR_HOSTNAME=$1
 NEW_PASSWORD=$2
-CURRENT_PASSWORD="Harbor12345"
+CURRENT_PASSWORD=$3
 
 # Wait
 BEFORE=$(curl -k -o /dev/null -s -w "%{http_code}\n" --user "admin:${CURRENT_PASSWORD}" "https://${HARBOR_HOSTNAME}/api/v2.0/users/1")
