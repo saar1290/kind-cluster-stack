@@ -9,23 +9,19 @@ resource "helm_release" "argocd" {
   values = [
     file("${path.module}/argocd/values.yaml")
   ]
-  set = [
-    {
-      name  = "server.ingress.hostname"
-      value = var.argocd_hostname
-    },
-    {
-      name  = "server.ingress.tls"
-      value = "true"
-    },
-    {
-      name  = "server.ingressGrpc.hostname"
-      value = var.argocd_hostname
-    },
-    {
-      name  = "server.ingressGrpc.tls"
-      value = "true"
-    }
+  # set = [
+  # {
+  #   name = "server.httproute.hostnames[0]"
+  #   value = var.argocd_hostname
+  # },
+  # {
+  #   name = "server.grpcroute.hostnames[0]"
+  #   value = var.argocd_grpc_hostname
+  # }
+  # ]
+  depends_on = [
+    kind_cluster.default,
+    helm_release.cert_manager,
+    helm_release.vault
   ]
-  depends_on = [helm_release.vault]
 }

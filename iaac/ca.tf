@@ -26,9 +26,9 @@ resource "tls_self_signed_cert" "ca_cert" {
 
 resource "null_resource" "write_ca_files" {
   triggers = {
-    ca_cert       = tls_self_signed_cert.ca_cert.cert_pem
-    ca_key        = sensitive(trimspace(tls_private_key.rsa-4096-ca.private_key_pem))
-    ssl_certs_dir = local.ssl_certs_dir
+    ca_cert          = tls_self_signed_cert.ca_cert.cert_pem
+    ca_key           = sensitive(trimspace(tls_private_key.rsa-4096-ca.private_key_pem))
+    ssl_certs_dir    = local.ssl_certs_dir
     docker_certs_dir = local.docker_certs_dir
   }
   provisioner "local-exec" {
@@ -49,7 +49,7 @@ resource "null_resource" "write_ca_files" {
 resource "null_resource" "install_ca_certificates" {
   triggers = {
     ssl_certs_dir = local.ssl_certs_dir
-    sudo         = var.sudo
+    sudo          = var.sudo
   }
   provisioner "local-exec" {
     command = "scripts/install-ca-certificates.sh ${self.triggers.ssl_certs_dir} ${self.triggers.sudo}"

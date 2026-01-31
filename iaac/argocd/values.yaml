@@ -1,17 +1,10 @@
-global:
-  domain: argocd.saar-lab.local
-  # topologySpreadConstraints:
-  #   - maxSkew: 1
-  #     topologyKey: "kubernetes.io/hostname"
-  #     whenUnsatisfiable: "DoNotSchedule"
-  #     labelSelector:
-  #       matchLabels:
-  #         app.kubernetes.io/name: argocd-server
-
 configs:
+  params:
+    server.insecure: true
   cm:
     exec.enabled: true
     statsusage.enabled: true
+    statusbadge.enabled: true
 
 controller:
   replicaCount: 3
@@ -23,3 +16,22 @@ redis-ha:
 server:
   autoscaling:
     enabled: true
+  httproute:
+    enabled: true
+    parentRefs:
+      - name: global-gateway
+        namespace: kube-system
+        sectionName: https
+    hostnames:
+      - "argocd.saar-lab.local"
+    rules:
+      - matches:
+          - path:
+              type: PathPrefix
+              value: /
+        backendRefs:
+          - name: argocd-server
+            port: 80
+            weight: 100
+  grpcroute:
+    enabled: false

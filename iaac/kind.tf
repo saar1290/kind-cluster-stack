@@ -9,17 +9,17 @@ resource "kind_cluster" "default" {
     dynamic "node" {
       for_each = var.nodes[*]
       content {
-        role = node.value.role
-        image = node.value.image
-        labels = node.value.labels
+        role                   = node.value.role
+        image                  = node.value.image
+        labels                 = node.value.labels
         kubeadm_config_patches = node.value.kubeadm_config_patches
         dynamic "extra_mounts" {
           for_each = node.value.extra_mounts
           content {
-            host_path      = extra_mounts.value.host_path
-            container_path = extra_mounts.value.container_path
-            read_only      = extra_mounts.value.read_only
-            propagation    = extra_mounts.value.propagation
+            host_path       = extra_mounts.value.host_path
+            container_path  = extra_mounts.value.container_path
+            read_only       = extra_mounts.value.read_only
+            propagation     = extra_mounts.value.propagation
             selinux_relabel = extra_mounts.value.selinux_relabel
           }
         }
@@ -41,4 +41,5 @@ resource "kind_cluster" "default" {
       rm -rf ${self.name}-config
     EOF
   }
+  depends_on = [null_resource.harbor_health_check]
 }

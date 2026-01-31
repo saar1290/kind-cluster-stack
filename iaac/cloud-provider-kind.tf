@@ -27,22 +27,19 @@ resource "docker_image" "cloud_provider_kind_build" {
 
 # Push the image to a registry
 resource "docker_registry_image" "pushed_image" {
-  name       = docker_image.cloud_provider_kind_build.name
+  name = docker_image.cloud_provider_kind_build.name
 }
 
 # Start a container
 resource "docker_container" "cloud_provider_kind_start" {
-  name  = "cloud-provider-kind"
-  image = docker_image.cloud_provider_kind_build.image_id
+  name    = "cloud-provider-kind"
+  image   = docker_image.cloud_provider_kind_build.image_id
+  # command = ["--enable-lb-port-mapping"]
   mounts {
     source = "/var/run/docker.sock"
     target = "/var/run/docker.sock"
     type   = "bind"
   }
-  mounts {
-    source = abspath("${path.root}/${kind_cluster.default.name}-config")
-    target = "/root/.kube/config"
-    type   = "bind"
-  }
-  network_mode = "host"
+  network_mode = "kind"
+  depends_on   = [kind_cluster.default]
 }

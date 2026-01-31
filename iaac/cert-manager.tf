@@ -6,6 +6,9 @@ resource "helm_release" "cert_manager" {
   version          = var.cert_manager_version
   namespace        = "cert-manager"
   create_namespace = true
+  values = [
+    file("${path.module}/cert-manager/values.yaml")
+  ]
   set = [
     {
       name  = "installCRDs"
@@ -34,11 +37,6 @@ resource "tls_cert_request" "csr_cert_manager" {
     province            = var.province
     locality            = var.locality
   }
-
-  dns_names = [
-    "cert-manager.${var.domain}",
-    "cert-manager-ca.${var.domain}"
-  ]
 }
 
 # Signed subCA certificates for cert-manager using the CA
@@ -47,31 +45,27 @@ resource "tls_locally_signed_cert" "cert_manager_ca_cert" {
   ca_private_key_pem = tls_self_signed_cert.ca_cert.private_key_pem
   ca_cert_pem        = tls_self_signed_cert.ca_cert.cert_pem
 
-  validity_period_hours = 43800 # 5 years
-
   allowed_uses = [
-    "key_encipherment",
-    "digital_signature",
-    "data_encipherment",
-    "cert_signing",
-    "client_auth"
+    "cert_signing"
   ]
-  early_renewal_hours = 168
-  is_ca_certificate   = true
+  validity_period_hours = 43800 # 5 years
+  early_renewal_hours   = 168
+  is_ca_certificate     = true
 }
 
 # Write certificate and private key to file
 resource "null_resource" "write_cert-manager_certificates_files" {
   triggers = {
-    cert_manager_ca_cert = tls_locally_signed_cert.cert_manager_ca_cert.cert_pem
-    cert_manager_private_key          = tls_private_key.rsa-4096-cert-manager.private_key_pem
-    ssl_certs_dir       = local.ssl_certs_dir
+    ca_certificate           = tls_self_signed_cert.ca_cert.cert_pem
+    cert_manager_ca_cert     = tls_locally_signed_cert.cert_manager_ca_cert.cert_pem
+    cert_manager_private_key = tls_private_key.rsa-4096-cert-manager.private_key_pem
+    ssl_certs_dir            = local.ssl_certs_dir
   }
   provisioner "local-exec" {
     quiet   = true
     command = <<EOF
       echo '${sensitive(trimspace(self.triggers.cert_manager_private_key))}' > ${self.triggers.ssl_certs_dir}/cert-manager.key
-      echo '${self.triggers.cert_manager_ca_cert}' > ${self.triggers.ssl_certs_dir}/cert-manager.crt
+      echo '${self.triggers.cert_manager_ca_cert}' '${self.triggers.ca_certificate}' > ${self.triggers.ssl_certs_dir}/cert-manager.crt
     EOF
   }
 }
@@ -91,7 +85,7 @@ resource "kubernetes_secret_v1" "cert_manager_ca_secret" {
 
 # Create a cert-manager Cluster Issuer using the CA secret
 resource "kubectl_manifest" "cert_manager_cluster_issuer" {
-  yaml_body  = <<YAML
+  yaml_body = <<YAML
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
@@ -101,5 +95,9 @@ spec:
   ca:
     secretName: ${kubernetes_secret_v1.cert_manager_ca_secret.metadata[0].name}
 YAML
-  depends_on = [kubernetes_secret_v1.cert_manager_ca_secret]
+  depends_on = [
+    helm_release.cert_manager,
+    kubernetes_secret_v1.cert_manager_ca_secret,
+    kind_cluster.default
+  ]
 }

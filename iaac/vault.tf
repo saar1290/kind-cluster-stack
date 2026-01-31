@@ -44,5 +44,8 @@ resource "helm_release" "vault" {
     }
   ]
 
-  depends_on = [helm_release.cert_manager]
+  depends_on = [
+    kind_cluster.default,
+    helm_release.cert_manager
+  ]
 }

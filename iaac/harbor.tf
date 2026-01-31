@@ -47,9 +47,9 @@ resource "tls_locally_signed_cert" "harbor_cert" {
 # Write certificate and private key to file
 resource "null_resource" "write_harbor_certificates_files" {
   triggers = {
-    harbor_cert    = tls_locally_signed_cert.harbor_cert.cert_pem
-    harbor_key     = sensitive(trimspace(tls_private_key.rsa-4096-harbor.private_key_pem))
-    ssl_certs_dir  = local.ssl_certs_dir
+    harbor_cert   = tls_locally_signed_cert.harbor_cert.cert_pem
+    harbor_key    = sensitive(trimspace(tls_private_key.rsa-4096-harbor.private_key_pem))
+    ssl_certs_dir = local.ssl_certs_dir
   }
   provisioner "local-exec" {
     quiet   = true
@@ -63,7 +63,7 @@ resource "null_resource" "write_harbor_certificates_files" {
 # Download Harbor installer
 resource "null_resource" "harbor_download" {
   triggers = {
-    harbor_version = var.harbor_version
+    harbor_version          = var.harbor_version
     harbor_installation_dir = local.harbor_installation_dir
   }
   provisioner "local-exec" {
@@ -78,11 +78,11 @@ resource "null_resource" "harbor_download" {
 # Install Harbor
 resource "null_resource" "harbor_install" {
   triggers = {
-    harbor_hostname        = var.harbor_hostname
-    docker_certs_dir       = local.docker_certs_dir
-    harbor_data_location   = local.harbor_data_location
+    harbor_hostname         = var.harbor_hostname
+    docker_certs_dir        = local.docker_certs_dir
+    harbor_data_location    = local.harbor_data_location
     harbor_installation_dir = local.harbor_installation_dir
-    sudo                   = var.sudo
+    sudo                    = var.sudo
   }
   provisioner "local-exec" {
     command = "scripts/install-harbor.sh ${self.triggers.harbor_hostname} ${self.triggers.harbor_installation_dir} ${self.triggers.harbor_data_location} ${self.triggers.docker_certs_dir} ${local.ssl_certs_dir} ${self.triggers.sudo}"
@@ -116,9 +116,9 @@ resource "random_password" "admin_password" {
 # Set Harbor admin password
 resource "null_resource" "set_harbor_admin_password" {
   triggers = {
-    harbor_hostname = var.harbor_hostname
-    new_admin_password  = random_password.admin_password.result
-    admin_password  = local.default_admin_password
+    harbor_hostname    = var.harbor_hostname
+    new_admin_password = random_password.admin_password.result
+    admin_password     = local.default_admin_password
   }
   provisioner "local-exec" {
     command = "scripts/set-harbor-admin-password.sh ${self.triggers.harbor_hostname} ${self.triggers.new_admin_password} ${self.triggers.admin_password}"
@@ -143,10 +143,10 @@ resource "null_resource" "harbor_health_check" {
 
 # Harbor Projects and Registries
 resource "harbor_project" "project" {
-  for_each   = { for project in var.harbor_projects : project => project }
-  name       = each.value
+  for_each      = { for project in var.harbor_projects : project => project }
+  name          = each.value
   force_destroy = true
-  depends_on = [null_resource.set_harbor_admin_password]
+  depends_on    = [null_resource.set_harbor_admin_password]
 }
 
 
