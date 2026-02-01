@@ -42,6 +42,6 @@ resource "kind_cluster" "default" {
     EOF
   }
   depends_on = [
-    docker_container.cloud_provider_kind_start
+    null_resource.set_harbor_admin_password
   ]
 }

@@ -13,11 +13,7 @@ resource "null_resource" "cloud_provider_kind_clone" {
     when    = destroy
     command = "rm -rf ${self.triggers.cloud_provider_kind_dir}"
   }
-  depends_on = [
-    null_resource.harbor_install,
-    null_resource.harbor_health_check,
-    null_resource.set_harbor_admin_password
-  ]
+  depends_on = [kind_cluster.default]
 }
 
 # Build a Docker image from a Dockerfile
@@ -45,7 +41,42 @@ resource "docker_container" "cloud_provider_kind_start" {
     type   = "bind"
   }
   network_mode = "kind"
-  depends_on   = [
-    null_resource.set_harbor_admin_password
-  ]
+}
+
+# Nginx stream proxy container for port forwarding
+resource "docker_image" "nginx_stream" {
+  name = "nginx:alpine"
+}
+
+resource "docker_container" "nginx_port_forward" {
+  name  = "nginx-port-forward-443"
+  image = docker_image.nginx_stream.image_id
+  
+  ports {
+    internal = 443
+    external = 443
+    protocol = "tcp"
+  }
+  
+  upload {
+    content = <<-EOT
+      events {
+          worker_connections 1024;
+      }
+      
+      stream {
+          server {
+              listen 443;
+              proxy_pass 172.19.0.7:443;
+          }
+      }
+    EOT
+    file    = "/etc/nginx/nginx.conf"
+  }
+  
+  command      = ["nginx", "-g", "daemon off;"]
+  network_mode = "kind"
+  restart      = "unless-stopped"
+  
+  depends_on = [docker_container.cloud_provider_kind_start]
 }
