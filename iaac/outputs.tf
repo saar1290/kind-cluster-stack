@@ -1,5 +1,5 @@
 output "harbor_url" {
-  value = "https://${var.harbor_hostname}"
+  value = "https://${var.harbor_hostname}:${var.harbor_port}"
 }
 
 output "vault_url" {

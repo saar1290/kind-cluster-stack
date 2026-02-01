@@ -1,16 +1,17 @@
 #! /bin/bash
 
 HARBOR_HOSTNAME=$1
-NEW_PASSWORD=$2
-CURRENT_PASSWORD=$3
+HARBOR_PORT=$2
+NEW_PASSWORD=$3
+CURRENT_PASSWORD=$4
 
 # Wait
-BEFORE=$(curl -k -o /dev/null -s -w "%{http_code}\n" --user "admin:${CURRENT_PASSWORD}" "https://${HARBOR_HOSTNAME}/api/v2.0/users/1")
-AFTER=$(curl -k -o /dev/null -s -w "%{http_code}\n" --user "admin:${NEW_PASSWORD}" "https://${HARBOR_HOSTNAME}/api/v2.0/users/1")
+BEFORE=$(curl -k -o /dev/null -s -w "%{http_code}\n" --user "admin:${CURRENT_PASSWORD}" "https://${HARBOR_HOSTNAME}:${HARBOR_PORT}/api/v2.0/users/1")
+AFTER=$(curl -k -o /dev/null -s -w "%{http_code}\n" --user "admin:${NEW_PASSWORD}" "https://${HARBOR_HOSTNAME}:${HARBOR_PORT}/api/v2.0/users/1")
 if [ "$AFTER" -ne 200 ]; then
   echo "Error: Unable to authenticate with new password. HTTP status code: $AFTER"
-  RESET=$(curl -k -o /dev/null -s -w "%{http_code}\n" -X PUT --user "admin:${CURRENT_PASSWORD}" -H 'Content-Type: application/json' "https://${HARBOR_HOSTNAME}/api/v2.0/users/1/password" -d '{"old_password": '\"$CURRENT_PASSWORD\"', "new_password": '\"$NEW_PASSWORD\"'}')
-  RES=$(curl -k -o /dev/null -s -w "%{http_code}\n" -X GET --user "admin:${NEW_PASSWORD}" -H 'Content-Type: application/json' "https://${HARBOR_HOSTNAME}/api/v2.0/systeminfo")
+  RESET=$(curl -k -o /dev/null -s -w "%{http_code}\n" -X PUT --user "admin:${CURRENT_PASSWORD}" -H 'Content-Type: application/json' "https://${HARBOR_HOSTNAME}:${HARBOR_PORT}/api/v2.0/users/1/password" -d '{"old_password": '\"$CURRENT_PASSWORD\"', "new_password": '\"$NEW_PASSWORD\"'}')
+  RES=$(curl -k -o /dev/null -s -w "%{http_code}\n" -X GET --user "admin:${NEW_PASSWORD}" -H 'Content-Type: application/json' "https://${HARBOR_HOSTNAME}:${HARBOR_PORT}/api/v2.0/systeminfo")
   if [ "$RES" -ne 200 ]; then
     echo "Error: Failed to reset password ❌"
     echo "Response: $RES"

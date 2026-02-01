@@ -41,5 +41,7 @@ resource "kind_cluster" "default" {
       rm -rf ${self.name}-config
     EOF
   }
-  depends_on = [null_resource.harbor_health_check]
+  depends_on = [
+    docker_container.cloud_provider_kind_start
+  ]
 }

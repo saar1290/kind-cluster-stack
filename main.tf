@@ -10,8 +10,7 @@ module "kind-cluster-stack" {
   locality                    = "Israel"
   harbor_version              = "v2.14.2"
   harbor_hostname             = "harbor.saar-lab.local"
-  kind_control_plane_ip       = "192.168.52.128"
-  kind_control_plane_ext_port = 4433
+  harbor_port                 = 8443
   cluster_name                = "saar-lab"
   node_image                  = "kindest/node:v1.35.0"
   nodes = [

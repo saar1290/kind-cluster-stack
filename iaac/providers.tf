@@ -33,7 +33,7 @@ terraform {
 
 # Configure the Harbor Provider
 provider "harbor" {
-  url      = "https://${var.harbor_hostname}"
+  url      = "https://${var.harbor_hostname}:${var.harbor_port}"
   username = "admin"
   password = random_password.admin_password.result
 }
@@ -43,7 +43,7 @@ provider "docker" {
   host = "unix:///var/run/docker.sock"
 
   registry_auth {
-    address  = var.harbor_hostname
+    address  = "${var.harbor_hostname}:${var.harbor_port}"
     username = "admin"
     password = random_password.admin_password.result
   }

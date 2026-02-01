@@ -3,12 +3,13 @@
 set -e
 
 # Inputs arguments
-HARBOR_HOSTNAME=$1
-HARBOR_INSTALLATION_DIR=$2
-HARBOR_DATA=$3
-DOCKER_CERTS_DIR=$4
-SSL_CERTS_DIR=$5
-SUDO=$6
+SUDO=$1
+HARBOR_HOSTNAME=$2
+HARBOR_PORT=$3
+HARBOR_INSTALLATION_DIR=$4
+HARBOR_DATA=$5
+DOCKER_CERTS_DIR=$6
+SSL_CERTS_DIR=$7
 
 # Environment variables
 HARBOR_CONFIG="${HARBOR_INSTALLATION_DIR}/harbor.yml"
@@ -25,6 +26,8 @@ sed -i "s|certificate: .*|certificate: ${HARBOR_CERT_DIR}/${HARBOR_HOSTNAME}.crt
 sed -i "s|private_key: .*|private_key: ${HARBOR_CERT_DIR}/${HARBOR_HOSTNAME}.key|g" $HARBOR_CONFIG
 sed -i "s|# external_url: .*|external_url: https://${HARBOR_HOSTNAME}|g" $HARBOR_CONFIG
 sed -i "s|data_volume: .*|data_volume: ${HARBOR_DATA}|g" $HARBOR_CONFIG
+sed -i "s|port: 443|port: ${HARBOR_PORT}|g" $HARBOR_CONFIG
+sed -i "s|port: 80|port: 8080|g" $HARBOR_CONFIG
 echo "Setting up certificates for Harbor 🔐"
 mkdir -p $HARBOR_CERT_DIR
 cp $HARBOR_CERT $HARBOR_CERT_DIR/${HARBOR_HOSTNAME}.crt

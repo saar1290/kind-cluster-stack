@@ -79,13 +79,14 @@ resource "null_resource" "harbor_download" {
 resource "null_resource" "harbor_install" {
   triggers = {
     harbor_hostname         = var.harbor_hostname
+    harbor_port             = var.harbor_port
     docker_certs_dir        = local.docker_certs_dir
     harbor_data_location    = local.harbor_data_location
     harbor_installation_dir = local.harbor_installation_dir
     sudo                    = var.sudo
   }
   provisioner "local-exec" {
-    command = "scripts/install-harbor.sh ${self.triggers.harbor_hostname} ${self.triggers.harbor_installation_dir} ${self.triggers.harbor_data_location} ${self.triggers.docker_certs_dir} ${local.ssl_certs_dir} ${self.triggers.sudo}"
+    command = "scripts/install-harbor.sh ${self.triggers.sudo} ${self.triggers.harbor_hostname} ${self.triggers.harbor_port} ${self.triggers.harbor_installation_dir} ${self.triggers.harbor_data_location} ${self.triggers.docker_certs_dir} ${local.ssl_certs_dir}"
   }
   provisioner "local-exec" {
     command = "scripts/install-harbor-service.sh ${self.triggers.harbor_installation_dir} ${self.triggers.sudo}"
@@ -117,11 +118,12 @@ resource "random_password" "admin_password" {
 resource "null_resource" "set_harbor_admin_password" {
   triggers = {
     harbor_hostname    = var.harbor_hostname
+    harbor_port        = var.harbor_port
     new_admin_password = random_password.admin_password.result
     admin_password     = local.default_admin_password
   }
   provisioner "local-exec" {
-    command = "scripts/set-harbor-admin-password.sh ${self.triggers.harbor_hostname} ${self.triggers.new_admin_password} ${self.triggers.admin_password}"
+    command = "scripts/set-harbor-admin-password.sh ${self.triggers.harbor_hostname} ${self.triggers.harbor_port} ${self.triggers.new_admin_password} ${self.triggers.admin_password}"
   }
   lifecycle {
     replace_triggered_by = [random_password.admin_password]
@@ -133,10 +135,11 @@ resource "null_resource" "set_harbor_admin_password" {
 resource "null_resource" "harbor_health_check" {
   triggers = {
     harbor_hostname = var.harbor_hostname
+    harbor_port     = var.harbor_port
     admin_password  = local.default_admin_password
   }
   provisioner "local-exec" {
-    command = "scripts/harbor-health-check.sh ${self.triggers.harbor_hostname} ${self.triggers.admin_password}"
+    command = "scripts/harbor-health-check.sh ${self.triggers.harbor_hostname} ${self.triggers.harbor_port} ${self.triggers.admin_password}"
   }
   depends_on = [null_resource.harbor_install]
 }

@@ -72,6 +72,11 @@ variable "harbor_hostname" {
   type        = string
 }
 
+variable "harbor_port" {
+  description = "The Harbor port"
+  type        = number
+}
+
 variable "harbor_projects" {
   description = "The Harbor projects name"
   type        = list(string)
@@ -133,27 +138,4 @@ variable "remote_repositories" {
     project_name = string
   }))
   default = []
-}
-
-variable "kind_control_plane_int_port" {
-  description = "The internal port for the kind control plane"
-  type        = number
-  default     = 443
-}
-
-variable "kind_control_plane_ext_port" {
-  description = "The external port for the kind control plane"
-  type        = number
-  default     = 443
-}
-
-variable "kind_control_plane_protocol" {
-  description = "The protocol for the kind control plane"
-  type        = string
-  default     = "tcp"
-}
-
-variable "kind_control_plane_ip" {
-  description = "The IP address for the kind control plane"
-  type        = string
 }
